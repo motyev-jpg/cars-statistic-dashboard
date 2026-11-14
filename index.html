@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>רכבים שנמסרו לפי שנה - 4 היצרנים המובילים</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="data/deliveries.js"></script>
+<style>
+  :root { --bg:#fff; --fg:#1d2733; --muted:#5f6b7a; --line:#e3e7ec; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#14181d; --fg:#e8ecf0; --muted:#9aa5b1; --line:#2a313a; } }
+  body { font-family: system-ui, "Segoe UI", Arial, sans-serif; background:var(--bg); color:var(--fg); margin:0; padding:24px; }
+  main { max-width:1000px; margin:0 auto; }
+  h1 { font-size:1.5rem; margin:0 0 4px; }
+  .sub { color:var(--muted); margin:0 0 20px; font-size:.9rem; }
+  .tiles { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
+  .tile { flex:1 1 140px; border:1px solid var(--line); border-radius:8px; padding:12px; }
+  .tile b { display:block; font-size:1.4rem; }
+  .tile span { color:var(--muted); font-size:.85rem; }
+  .tile i { display:inline-block; width:10px; height:10px; border-radius:2px; margin-inline-end:6px; }
+  .toggle { margin-bottom:8px; }
+  button { border:1px solid var(--line); background:var(--bg); color:var(--fg); padding:6px 14px; cursor:pointer; border-radius:6px; }
+  button.on { background:var(--fg); color:var(--bg); }
+  .chart { position:relative; height:420px; direction:ltr; }
+  table { border-collapse:collapse; width:100%; margin-top:24px; font-variant-numeric:tabular-nums; }
+  th, td { border-bottom:1px solid var(--line); padding:8px; text-align:end; }
+  th:first-child, td:first-child { text-align:start; }
+  .note { color:var(--muted); font-size:.8rem; margin-top:16px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>רכבים שנמסרו בישראל לפי שנה</h1>
+  <p class="sub" id="sub"></p>
+  <div class="tiles" id="tiles"></div>
+  <div class="toggle">
+    <button id="bBar" class="on">עמודות</button>
+    <button id="bLine">קווים</button>
+  </div>
+  <div class="chart"><canvas id="chart"></canvas></div>
+  <table id="table"></table>
+  <p class="note" id="note"></p>
+</main>
+<script>
+const D = window.DELIVERIES;
+// Colorblind-safe categorical palette.
+const COLORS = ["#2a6fdb", "#e8833a", "#2a9d8f", "#8e5bd0"];
+const fmt = n => n.toLocaleString("he-IL");
+const labels = D.years.map(y => y === D.partial_year ? y + " (חלקית)" : String(y));
+
+document.getElementById("sub").textContent =
+  `רכב נוסעים בלבד, ${D.years[0]}–${D.years.at(-1)}. מקור: data.gov.il. עודכן: ${D.generated}`;
+
+document.getElementById("tiles").innerHTML = D.brands.map((b, i) => {
+  const total = b.deliveries.reduce((a, c) => a + c, 0);
+  return `<div class="tile"><i style="background:${COLORS[i]}"></i><span>${b.name}</span><b>${fmt(total)}</b><span>סה"כ ${D.years.length} שנים</span></div>`;
+}).join("");
+
+const head = `<tr><th>שנה</th>${D.brands.map(b => `<th>${b.name}</th>`).join("")}<th>סה"כ</th></tr>`;
+const rows = D.years.map((y, j) => {
+  const vals = D.brands.map(b => b.deliveries[j]);
+  return `<tr><td>${labels[j]}</td>${vals.map(v => `<td>${fmt(v)}</td>`).join("")}<td>${fmt(vals.reduce((a, c) => a + c, 0))}</td></tr>`;
+}).join("");
+document.getElementById("table").innerHTML = head + rows;
+document.getElementById("note").textContent =
+  `הגדרה: שנת העלייה הראשונה לכביש. המאגר כולל רק רכבים שעדיין רשומים, ולכן שנים ישנות מוצגות בחסר קל. ${D.partial_year} חלקית.`;
+
+let chart;
+function draw(type) {
+  if (chart) chart.destroy();
+  chart = new Chart(document.getElementById("chart"), {
+    type,
+    data: {
+      labels,
+      datasets: D.brands.map((b, i) => ({
+        label: b.name, data: b.deliveries,
+        backgroundColor: COLORS[i], borderColor: COLORS[i],
+        tension: .25, borderWidth: type === "line" ? 2.5 : 0, pointRadius: type === "line" ? 3 : 0,
+      })),
+    },
+    options: {
+      maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: { tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } } },
+      scales: { y: { beginAtZero: true, ticks: { callback: v => fmt(v) } } },
+    },
+  });
+  bBar.classList.toggle("on", type === "bar");
+  bLine.classList.toggle("on", type === "line");
+}
+const bBar = document.getElementById("bBar"), bLine = document.getElementById("bLine");
+bBar.onclick = () => draw("bar");
+bLine.onclick = () => draw("line");
+draw("bar");
+</script>
+</body>
+</html>
