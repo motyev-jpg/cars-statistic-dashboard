@@ -1,4 +1,4 @@
-# Practice: how we build csrm-dashboard
+# Practice: how we build cars-statistic-dashboard
 
 This file defines the working process. `concept.md` defines what we build.
 
@@ -12,8 +12,8 @@ This file defines the working process. `concept.md` defines what we build.
 ## Git and GitHub
 
 - The project is saved to GitHub. Remote: `origin`.
-- Repository name: `customer-service-request`. Visibility: **public**.
-- Because the repo is public, never commit secrets, customer data, or real service request content. Use sample or anonymized data only.
+- Repository name: `cars-statistic-dashboard`. Visibility: **public**.
+- Because the repo is public, never commit secrets or personal data. Use only public data (data.gov.il).
 - Two long-lived branches: `main` (stable, released) and `dev` (work in progress).
 - All build work is committed to `dev`. Claude never commits directly to `main`.
 - After each "please build", Claude commits to `dev` and pushes `dev` to GitHub.
